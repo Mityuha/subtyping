@@ -1,19 +1,16 @@
-from typing import Final, get_origin, get_args, Any
+from typing import Final, get_origin, get_args, Any, TypeVar, Iterable
 from .types import TypeT
+from .builtin_subclasses import CollectionABCCompare
+
+T_co = TypeVar("T_co", covariant=True, bound="NormalizedType")
 
 
-# TODO: think about this class
-class NormalizedArgs:
-    def __init__(self, args: tuple["NormalizedType", ...]) -> None:
-        self.args: Final = args
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, NormalizedArgs):
-            return False
-        return self.args == other.args
+class NTuple(tuple[T_co]):
+    def __new__(self, iterable: Iterable[T_co] = ()) -> Any:
+        return super().__new__(NTuple, iterable)
 
     def isany(self) -> bool:
-        return len(self.args) == 1 and self.args[0].origin is Any
+        return len(self) == 1 and self[0].origin is Any
 
 
 class NormalizedType:
@@ -23,54 +20,36 @@ class NormalizedType:
         self.args: Final = args
 
     @staticmethod
-    def _parse_type(_type: TypeT) -> tuple[TypeT, tuple["NormalizedType", ...]]:
+    def _parse_type(_type: TypeT) -> tuple[TypeT, NTuple["NormalizedType"]]:
         origin = get_origin(_type) or _type
-        args: tuple[NormalizedType, ...]
+        args: NTuple[NormalizedType]
 
         if origin is Any:
-            args = ()
+            args = NTuple()
         else:
-            args = tuple(NormalizedType(arg) for arg in (get_args(_type) or (Any,)))
+            args = NTuple(NormalizedType(arg) for arg in (get_args(_type) or (Any,)))
 
         return origin, args
 
-    def __eq__(self, right: object) -> bool:
-        if not isinstance(right, NormalizedType):
+    def __eq__(self, supertype: object) -> bool:
+        if not isinstance(supertype, NormalizedType):
             return False
 
-        return self.origin == right.origin and self.args == right.args
+        return self.origin == supertype.origin and self.args == supertype.args
 
-    def isargsany(self) -> bool:
-        return len(self.args) == 1 and self.args[0].origin is Any
-
-    def __ge__(self, right: "NormalizedType") -> bool:
-        """Check if S (right) is a subtype of T (left).
-        Made for simplicity.
-        class Animal: ...
-        class Cat(Animal): ...
-
-        #     left   right
-               v       v
-        res: Animal = Cat()
-        """
-        if self == right:
+    def __le__(self, supertype: "NormalizedType") -> bool:
+        if self == supertype:
             return True
 
-        if self.origin is Any or right.origin is Any:
+        if self.origin is Any or supertype.origin is Any:
             return True
 
-        # tests required
-        # if issubclass(right.origin, self.origin):
-        #     return any(
-        #         [
-        #             self.isargsany(),
-        #             right.isargsany(),
-        #             (
-        #                 len(self.args) == len(right.args)
-        #                 and all(
-        #                     larg == rarg for larg, rarg in zip(self.args, right.args)
-        #                 )
-        #             ),
-        #         ]
-        #     )
+        if issubclass(self.origin, supertype.origin) and any(
+            [self.args.isany(), supertype.args.isany()]
+        ):
+            return True
+
+        if CollectionABCCompare(self, supertype):
+            return True
+
         return False
