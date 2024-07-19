@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Protocol, Collection, TypeVar
+from typing import Protocol, Collection, TypeVar, Any
 
 
 TypeT = None | type | TypeVar | object
@@ -20,6 +20,6 @@ class INormalizedType(Protocol):
     @property
     def args(self) -> ICollection["INormalizedType"]: ...
 
-    def __le__(self, supertype: "INormalizedType") -> bool: ...
+    def __le__(self, supertype: Any) -> bool: ...
 
     def __eq__(self, supertype: object) -> bool: ...

@@ -44,6 +44,9 @@ class NormalizedType:
         if self.origin is Any or supertype.origin is Any:
             return True
 
+        assert isinstance(self.origin, type)
+        assert isinstance(supertype.origin, type)
+
         if issubclass(self.origin, supertype.origin) and any(
             [self.args.isany(), supertype.args.isany()]
         ):
