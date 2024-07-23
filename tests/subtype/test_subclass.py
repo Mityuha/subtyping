@@ -30,6 +30,7 @@ class Cat(Animal): ...
         (Set[Cat], Iterable[Animal]),
         (Mapping[Cat, int], Collection[Animal]),
         (Collection[Animal], Sized),
+        (Iterator[None], Iterable[None]),
     ],
 )
 def test_subclass_immutable(t1: type, t2: type) -> None:

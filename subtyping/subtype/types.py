@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Protocol, Collection, TypeVar, Any
+from typing import Protocol, Collection, TypeVar, Any, Final
 
 
 TypeT = None | type | TypeVar | object
@@ -23,3 +23,10 @@ class INormalizedType(Protocol):
     def __le__(self, supertype: Any) -> bool: ...
 
     def __eq__(self, supertype: object) -> bool: ...
+
+
+ITSNOT: Final = False
+ITIS: Final = True
+UNKNOWN: Final = None
+
+IsSubtype = bool | None

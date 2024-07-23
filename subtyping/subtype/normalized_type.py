@@ -1,6 +1,7 @@
 from typing import Final, get_origin, get_args, Any, TypeVar, Iterable
-from .types import TypeT
-from .builtin_subclasses import CollectionABCCompare
+from .types import TypeT, IsSubtype
+from .handlers import handlers
+from subtyping.logger import logger
 
 T_co = TypeVar("T_co", covariant=True, bound="NormalizedType")
 
@@ -38,21 +39,11 @@ class NormalizedType:
         return self.origin == supertype.origin and self.args == supertype.args
 
     def __le__(self, supertype: "NormalizedType") -> bool:
-        if self == supertype:
-            return True
-
-        if self.origin is Any or supertype.origin is Any:
-            return True
-
-        assert isinstance(self.origin, type)
-        assert isinstance(supertype.origin, type)
-
-        if issubclass(self.origin, supertype.origin) and any(
-            [self.args.isany(), supertype.args.isany()]
-        ):
-            return True
-
-        if CollectionABCCompare(self, supertype):
-            return True
+        for handler in handlers:
+            res: IsSubtype = handler(self, supertype)
+            if res is None:
+                continue
+            logger.debug(f"[{handler.__qualname__}]: triggered with '{res}' result")
+            return res
 
         return False
